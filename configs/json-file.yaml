@@ -9,11 +9,11 @@ test:
   topic: "json-file-performance-test"
   create_topic: true
   delete_topic: true
-  partitions: 3
+  partitions: 13
   replication_factor: 1
   
-  tps: 1000
-  duration_sec: 60
+  tps: 3000
+  duration_sec: 120
   payload_bytes: 1024  # Ignored when using payload_file
   
   # Use external JSON file as payload

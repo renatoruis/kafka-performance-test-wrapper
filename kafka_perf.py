@@ -27,6 +27,16 @@ class KafkaPerfWrapper:
         self.script_dir = Path(__file__).parent.resolve()
         self.config_path = config_path or self.script_dir / "configs" / "default.yaml"
         self.config = self._load_config()
+    
+    @staticmethod
+    def _format_bytes(size_bytes: int) -> str:
+        """Format bytes to human-readable size"""
+        if size_bytes < 1024:
+            return f"{size_bytes} bytes"
+        elif size_bytes < 1024 * 1024:
+            return f"{size_bytes / 1024:.1f} KB"
+        else:
+            return f"{size_bytes / (1024 * 1024):.1f} MB"
         
     def _load_config(self) -> Dict[str, Any]:
         """Load configuration from YAML file"""
@@ -306,9 +316,10 @@ sasl.client.callback.handler.class=software.amazon.msk.auth.iam.IAMClientCallbac
         
         # Use actual payload size if JSON file is used, otherwise use config value
         actual_payload_size = payload_size if use_custom_payload else test_config['payload_bytes']
+        payload_size_str = self._format_bytes(actual_payload_size)
         
         if use_custom_payload:
-            print(f"📝 Using custom JSON payload: {payload_size} bytes")
+            print(f"📝 Using custom JSON payload: {payload_size_str}")
         
         try:
             bootstrap = self._get_bootstrap_servers()
@@ -318,7 +329,7 @@ sasl.client.callback.handler.class=software.amazon.msk.auth.iam.IAMClientCallbac
             summary_header = f"""=== Kafka Performance Test ===
 Topic: {topic}
 Bootstrap: {bootstrap_orig}
-Records: {num_records} | TPS: {test_config['tps']} | Payload: {actual_payload_size} bytes | Duration: {test_config['duration_sec']}s
+Records: {num_records} | TPS: {test_config['tps']} | Payload: {payload_size_str} | Duration: {test_config['duration_sec']}s
 Producer: acks={producer_config_obj['acks']} compression={producer_config_obj['compression']} linger_ms={producer_config_obj['linger_ms']} batch_size={producer_config_obj['batch_size']}
 """
             
@@ -489,10 +500,11 @@ Producer: acks={producer_config_obj['acks']} compression={producer_config_obj['c
         consumer_line = self._extract_section(content, 'Consumer Summary:')
         
         # Parse test parameters from records_line
-        # Format: "60000 | TPS: 1000 | Payload: 1024 bytes | Duration: 60s"
+        # Format: "60000 | TPS: 1000 | Payload: 222.4 KB | Duration: 60s"
         num_records = self._extract_value(records_line, r'^(\d+)')
         target_tps = self._extract_value(records_line, r'TPS:\s*(\d+)')
-        payload_size = self._extract_value(records_line, r'Payload:\s*(\d+)\s*bytes')
+        # Payload can be: "1024 bytes", "64.0 KB", "1.5 MB"
+        payload_size = self._extract_value(records_line, r'Payload:\s*([0-9.]+\s*(?:bytes|KB|MB))')
         duration = self._extract_value(records_line, r'Duration:\s*(\d+)s')
         
         # Parse producer metrics
@@ -665,7 +677,7 @@ Throughput:   {consumer_mbps} MB/s
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
                 <div class="text-xs font-medium text-gray-500 uppercase mb-1">Payload Size</div>
                 <div class="text-2xl font-bold text-gray-900">{payload_size}</div>
-                <div class="text-xs text-gray-500 mt-1">bytes</div>
+                <div class="text-xs text-gray-500 mt-1">per message</div>
             </div>
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
                 <div class="text-xs font-medium text-gray-500 uppercase mb-1">Duration</div>
