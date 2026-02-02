@@ -1,0 +1,34 @@
+# Kafka Performance Test Configuration - JSON File Example
+kafka:
+  bootstrap_servers: "localhost:9094"
+
+use_docker_cli: true
+kafka_image: "confluentinc/cp-kafka:7.6.0"
+
+test:
+  topic: "json-file-performance-test"
+  create_topic: true
+  delete_topic: true
+  partitions: 3
+  replication_factor: 1
+  
+  tps: 1000
+  duration_sec: 60
+  payload_bytes: 1024  # Ignored when using payload_file
+  
+  # Use external JSON file as payload
+  payload_file: "payloads/json-128kb.json"
+
+producer:
+  acks: "all"
+  compression: "snappy"
+  linger_ms: 10
+  batch_size: 16384
+  client_id: "json-file-producer"
+
+consumer:
+  enabled: true
+  group: "json-file-group"
+  from_latest: false
+
+report_dir: ""

@@ -1,0 +1,47 @@
+# Kafka Performance Test Configuration - AWS MSK with IAM
+kafka:
+  bootstrap_servers: "b-1.XXX.amazonaws.com:9098,b-2.XXX.amazonaws.com:9098"
+
+use_docker_cli: true
+kafka_image: "confluentinc/cp-kafka:7.6.0"
+
+# MSK IAM Authentication
+msk_iam:
+  enabled: true
+  region: "us-east-1"
+  role_arn: "arn:aws:iam::XXX:role/XXX"
+  session_name: "perf-cli"
+  profile: ""
+  jar_version: "2.3.5"
+
+# Test Configuration
+test:
+  topic: "XXX"
+  topic_prefix: ""
+  create_topic: false  # Topic already exists in MSK
+  delete_topic: false
+  partitions: 3
+  replication_factor: 2
+  
+  tps: 1000
+  duration_sec: 60
+  payload_bytes: 1024
+  num_records: 0
+
+# Producer Configuration
+producer:
+  acks: "all"
+  compression: "snappy"
+  linger_ms: 10
+  batch_size: 16384
+  client_id: "perf-cli-producer"
+
+# Consumer Configuration
+consumer:
+  enabled: true
+  group: "perf-cli-group"
+  timeout_ms: 120000
+  reporting_interval_ms: 5000
+  from_latest: false
+
+report_dir: ""

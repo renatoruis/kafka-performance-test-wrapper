@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Reports
+reports/
+*.out
+
+# Cache
+.cache/
+*.jar
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Configs sensíveis
+*-prod.yaml
+*-production.yaml
+*-credentials.yaml
+configs/*-prod.yaml
+configs/*-production.yaml
+
+# Temp files
+*.tmp
+*.temp
+*.properties
+
+# Keep example payloads but ignore custom ones
+payloads/*
+!payloads/sample-*.json
+!payloads/.gitkeep
+
+
+#developer files
+prd/
