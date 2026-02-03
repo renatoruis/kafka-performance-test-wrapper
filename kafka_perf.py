@@ -236,8 +236,14 @@ Producer: acks={producer_config['acks']}, compression={producer_config['compress
             # Consumer test
             print(f"\n📥 Running consumer test...")
             
-            # Use unique consumer group for each test to avoid offset issues
-            consumer_group = f"perf-consumer-{timestamp}"
+            # Get consumer group from config or generate unique one
+            consumer_group_config = test_params.get('consumer_group')
+            if consumer_group_config:
+                # If config has consumer_group, append timestamp to make it unique
+                consumer_group = f'{consumer_group_config}-{timestamp}'
+            else:
+                # Default: generate unique consumer group
+                consumer_group = f'perf-consumer-{timestamp}'
             
             # Create consumer config to read from beginning
             temp_consumer_config_path = None

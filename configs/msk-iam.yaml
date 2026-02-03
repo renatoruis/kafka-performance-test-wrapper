@@ -29,6 +29,12 @@ test:
   duration_sec: 60
   consumer_timeout_ms: 60000
   
+  # Consumer group (optional)
+  # If not set, generates: perf-consumer-{timestamp}
+  # For MSK IAM, use a prefix that matches your IAM policy
+  # Example: "A5X-DEV-JS-DEVOPS-TESTEPERFORMANCE-perf"
+  # consumer_group: "your-consumer-group-prefix"
+  
   # num_records auto-calculated: 1000 × 60 = 60,000
   # Uncomment to override:
   # num_records: 100000

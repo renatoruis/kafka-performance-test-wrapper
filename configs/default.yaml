@@ -26,6 +26,9 @@ test:
   # Uncomment below to override:
   # num_records: 100000
   
+  # Consumer group (optional) - if not set, generates: perf-consumer-{timestamp}
+  # consumer_group: "my-consumer-group"
+  
   # JSON Payload (optional)
   # If not specified, uses payload_bytes (default: 1024)
   payload_file: ""  # Path to JSON file (will be minified)

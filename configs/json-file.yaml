@@ -12,6 +12,9 @@ test:
   duration_sec: 180
   consumer_timeout_ms: 60000
   
+  # Consumer group (optional) - if not set, generates: perf-consumer-{timestamp}
+  # consumer_group: "my-consumer-group"
+  
   # num_records is auto-calculated as: target_tps × duration_sec
   # Uncomment below to override:
   # num_records: 500000
