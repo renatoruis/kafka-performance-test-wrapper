@@ -3,7 +3,8 @@ kafka:
   bootstrap_servers: "b-1.XXX.amazonaws.com:9098,b-2.XXX.amazonaws.com:9098"
 
 docker:
-  kafka_image: "confluentinc/cp-kafka:7.6.0"
+  # Using 7.8.0+ for Java 17 support (required by MSK IAM Auth JAR 2.3.5)
+  kafka_image: "confluentinc/cp-kafka:7.8.0"
 
 # MSK IAM Authentication
 msk_iam:

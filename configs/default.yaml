@@ -4,7 +4,7 @@ kafka:
   bootstrap_servers: "localhost:9094"
 
 docker:
-  kafka_image: "confluentinc/cp-kafka:7.6.0"
+  kafka_image: "confluentinc/cp-kafka:7.8.0"
 
 # MSK IAM Authentication (optional)
 msk_iam:

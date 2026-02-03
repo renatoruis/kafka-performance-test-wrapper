@@ -7,7 +7,7 @@ from typing import Optional, List
 class DockerRunner:
     """Run Kafka CLI commands via Docker"""
     
-    def __init__(self, kafka_image: str = 'confluentinc/cp-kafka:7.6.0'):
+    def __init__(self, kafka_image: str = 'confluentinc/cp-kafka:7.8.0'):
         self.kafka_image = kafka_image
     
     def run_kafka_cmd(
