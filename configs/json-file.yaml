@@ -6,12 +6,15 @@ docker:
   kafka_image: "confluentinc/cp-kafka:7.6.0"
 
 test:
-  name: "json-file-performance-test"
-  topic: "test-json"
-  num_records: 100000
-  target_tps: 2000
-  duration_sec: 120
+  name: "teste-jsonfile-loca-1"
+  topic: "teste-jsonfile-local-1"
+  target_tps: 5000
+  duration_sec: 180
   consumer_timeout_ms: 60000
+  
+  # num_records is auto-calculated as: target_tps × duration_sec
+  # Uncomment below to override:
+  # num_records: 500000
   
   # JSON payload file
   payload_file: "payloads/sample-event.json"

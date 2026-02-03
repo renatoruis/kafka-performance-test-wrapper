@@ -141,7 +141,11 @@ class KafkaPerfWrapper:
             payload_size_str = format_bytes(actual_payload_size)
             duration = test_params.get('duration_sec', 60)
             target_tps = test_params.get('target_tps', 1000)
-            num_records = test_params.get('num_records', 1000000)
+            
+            # Auto-calculate num_records if not specified: target_tps × duration_sec
+            num_records = test_params.get('num_records')
+            if num_records is None:
+                num_records = target_tps * duration
             
             summary_header = f"""Kafka Performance Test Report
 ================================
@@ -159,7 +163,10 @@ Producer: acks={producer_config['acks']}, compression={producer_config['compress
             print(f"\n📊 Test Configuration:")
             print(f"   Topic: {topic}")
             print(f"   Bootstrap: {bootstrap_servers}")
-            print(f"   Records: {num_records}")
+            if test_params.get('num_records') is None:
+                print(f"   Records: {num_records:,} (auto: {target_tps} × {duration}s)")
+            else:
+                print(f"   Records: {num_records:,}")
             print(f"   Target TPS: {target_tps}")
             print(f"   Payload: {payload_size_str}")
             print(f"   Duration: {duration}s")
@@ -213,10 +220,10 @@ Producer: acks={producer_config['acks']}, compression={producer_config['compress
                 print(result.stderr)
                 sys.exit(1)
             
-            # Extract producer summary
+            # Extract producer summary - get the FINAL summary line (has percentiles)
             producer_lines = result.stdout.split('\n')
             producer_summary = ''
-            for line in producer_lines:
+            for line in reversed(producer_lines):
                 if 'records sent' in line and 'records/sec' in line:
                     producer_summary = line
                     with open(summary_out, 'a') as f:
@@ -228,26 +235,41 @@ Producer: acks={producer_config['acks']}, compression={producer_config['compress
             # Consumer test
             print(f"\n📥 Running consumer test...")
             
+            # Use unique consumer group for each test to avoid offset issues
+            consumer_group = f"perf-consumer-{timestamp}"
+            
+            # Create consumer config to read from beginning
+            temp_consumer_config_path = None
+            if not consumer_config_file:
+                # Create consumer config with auto.offset.reset=earliest in /tmp
+                temp_consumer_config_path = f'/tmp/consumer-perf-{timestamp}.properties'
+                with open(temp_consumer_config_path, 'w') as f:
+                    f.write('auto.offset.reset=earliest\n')
+            
             # Build consumer command
+            # NOTE: Not using --show-detailed-stats to get final aggregate metrics
             consumer_cmd = [
                 'kafka-consumer-perf-test',
                 '--topic', topic,
                 '--bootstrap-server', bootstrap_servers,
                 '--messages', str(num_records),
                 '--timeout', str(test_params.get('consumer_timeout_ms', 60000)),
-                '--reporting-interval', '1000',
-                '--show-detailed-stats',
-                '--group', 'perf-consumer-group'
+                '--group', consumer_group
             ]
             
-            # Add consumer config file if using MSK IAM
+            # Add consumer config file
             if consumer_config_file:
+                # Using MSK IAM config
                 consumer_cmd.extend(['--consumer.config', '/tmp/consumer.properties'])
+            elif temp_consumer_config_path:
+                # Using temp config with auto.offset.reset=earliest
+                consumer_cmd.extend(['--consumer.config', temp_consumer_config_path])
             
             result = self.docker_runner.run_kafka_cmd(
                 consumer_cmd,
                 bootstrap_servers=bootstrap_servers,
                 jar_path=jar_path,
+                consumer_config=temp_consumer_config_path,
                 aws_config=aws_config
             )
             
@@ -316,6 +338,8 @@ Producer: acks={producer_config['acks']}, compression={producer_config['compress
             # Cleanup temporary files
             if temp_payload_file and Path(temp_payload_file).exists():
                 Path(temp_payload_file).unlink()
+            if 'temp_consumer_config_path' in locals() and temp_consumer_config_path and Path(temp_consumer_config_path).exists():
+                Path(temp_consumer_config_path).unlink()
             if producer_config_file and Path(producer_config_file).exists():
                 Path(producer_config_file).unlink()
             if consumer_config_file and Path(consumer_config_file).exists():

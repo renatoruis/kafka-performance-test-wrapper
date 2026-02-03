@@ -3,51 +3,41 @@
 kafka:
   bootstrap_servers: "localhost:9094"
 
-# Use Docker CLI (recommended)
-use_docker_cli: true
-kafka_image: "confluentinc/cp-kafka:7.6.0"
+docker:
+  kafka_image: "confluentinc/cp-kafka:7.6.0"
 
 # MSK IAM Authentication (optional)
 msk_iam:
   enabled: false
   region: ""
   role_arn: ""
-  session_name: "perf-cli"
+  session_name: "perf-test"
   profile: ""
-  jar_version: "2.3.5"
 
 # Test Configuration
 test:
+  name: "default-performance-test"
   topic: "performance-test"
-  topic_prefix: ""  # If set, generates unique topic name
-  create_topic: true
-  delete_topic: false
-  partitions: 3
-  replication_factor: 1
-  
-  tps: 1000
+  target_tps: 1000
   duration_sec: 60
-  payload_bytes: 1024
-  num_records: 0  # 0 = auto-calculate from TPS * duration
+  consumer_timeout_ms: 60000
+  
+  # num_records is auto-calculated as: target_tps × duration_sec = 60,000
+  # Uncomment below to override:
+  # num_records: 100000
   
   # JSON Payload (optional)
-  payload_file: ""  # Path to JSON file to use as payload (will be minified to single line)
+  # If not specified, uses payload_bytes (default: 1024)
+  payload_file: ""  # Path to JSON file (will be minified)
+  payload_bytes: 1024  # Used only if payload_file is empty
+  
+  producer:
+    acks: "all"
+    compression: "snappy"
+    linger_ms: 10
+    batch_size: 16384
+    client_id: "default-producer"
 
-# Producer Configuration
-producer:
-  acks: "all"
-  compression: "snappy"
-  linger_ms: 10
-  batch_size: 16384 # 16KB
-  client_id: "perf-cli-producer"
-
-# Consumer Configuration
-consumer:
-  enabled: true
-  group: "perf-cli-group"
-  timeout_ms: 120000
-  reporting_interval_ms: 5000
-  from_latest: false
-
-# Report Directory
-report_dir: ""  # Empty = auto (./reports)
+report:
+  dir: ""
+  http_port: 8000

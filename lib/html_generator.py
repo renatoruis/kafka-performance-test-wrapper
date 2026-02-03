@@ -232,7 +232,7 @@ class HTMLGenerator:
                 <div class="bg-white rounded-lg p-5 border border-gray-200 shadow-sm">
                     <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Throughput (TPS)</div>
                     <div class="text-3xl font-bold text-gray-900">{m.get('consumer_msgps', 'N/A')}</div>
-                    <div class="text-xs text-gray-600 mt-1">msg/s read</div>
+                    <div class="text-xs text-gray-600 mt-1">msg/s overall (includes rebalance)</div>
                 </div>
 
                 <!-- Data Rate -->
@@ -267,7 +267,7 @@ class HTMLGenerator:
                             <div class="text-sm font-mono text-gray-900 mb-1">{m.get('consumer_start', 'N/A')} → {m.get('consumer_end', 'N/A')}</div>
                             <div class="flex items-center gap-2 mt-2">
                                 <span class="text-xs font-medium text-gray-600">Duration:</span>
-                                <span class="text-lg font-bold text-gray-900">{m.get('consumer_duration', 'N/A')}s</span>
+                                <span class="text-lg font-bold text-gray-900">{m.get('consumer_duration', 'N/A')}{"s" if m.get('consumer_duration', 'N/A') != 'N/A' else ""}</span>
                             </div>
                         </div>
                         <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -284,23 +284,23 @@ class HTMLGenerator:
                         </svg>
                         <h3 class="text-sm font-semibold text-gray-900">Fetch Performance Metrics</h3>
                     </div>
-                    <p class="text-xs text-gray-600 mb-4">Performance metrics for fetch operations (reading from Kafka broker)</p>
+                    <p class="text-xs text-gray-600 mb-4">Internal fetch performance (excludes rebalance time). For overall throughput, see TPS above.</p>
                     
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div class="bg-white rounded-lg p-4 border border-gray-200">
                             <div class="text-xs font-medium text-gray-500 uppercase mb-1">Fetch Time</div>
                             <div class="text-2xl font-bold text-gray-900">{m.get('consumer_fetch_ms', 'N/A')} ms</div>
-                            <div class="text-xs text-gray-600 mt-2">Total time spent fetching data from broker</div>
+                            <div class="text-xs text-gray-600 mt-2">Time spent in fetch phase only</div>
                         </div>
                         <div class="bg-white rounded-lg p-4 border border-gray-200">
                             <div class="text-xs font-medium text-gray-500 uppercase mb-1">Fetch Data Rate</div>
                             <div class="text-2xl font-bold text-gray-900">{m.get('consumer_fetch_mbps', 'N/A')} MB/s</div>
-                            <div class="text-xs text-gray-600 mt-2">Data transfer rate during fetch operations</div>
+                            <div class="text-xs text-gray-600 mt-2">Transfer rate during fetch phase</div>
                         </div>
                         <div class="bg-white rounded-lg p-4 border border-gray-200">
                             <div class="text-xs font-medium text-gray-500 uppercase mb-1">Fetch Message Rate</div>
                             <div class="text-2xl font-bold text-gray-900">{m.get('consumer_fetch_msgps', 'N/A')} msg/s</div>
-                            <div class="text-xs text-gray-600 mt-2">Message rate during fetch operations</div>
+                            <div class="text-xs text-gray-600 mt-2">Message rate during fetch phase (excludes rebalance)</div>
                         </div>
                     </div>
                 </div>

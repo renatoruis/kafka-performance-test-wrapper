@@ -134,29 +134,59 @@ class ResultParser:
         
         parts = consumer_line.split(',')
         
-        # Format: time, threadId, data.consumed.in.MB, MB.sec, data.consumed.in.nMsg, nMsg.sec, rebalance.time.ms, fetch.time.ms, fetch.MB.sec, fetch.nMsg.sec
-        # Indices:  0      1          2                   3         4                      5           6                7             8               9
+        # Format: start.time, end.time, data.consumed.in.MB, MB.sec, data.consumed.in.nMsg, nMsg.sec, rebalance.time.ms, fetch.time.ms, fetch.MB.sec, fetch.nMsg.sec
+        # Indices:  0           1          2                   3         4                      5           6                7             8               9
         
-        # Parse timestamp (no end time in this format, only start)
+        # Parse timestamps and calculate duration
         start_time = parts[0].strip() if len(parts) > 0 else 'N/A'
-        end_time = 'N/A'  # Not available in detailed stats format
-        duration = 'N/A'  # Cannot calculate without end time
+        end_time = parts[1].strip() if len(parts) > 1 else 'N/A'
+        duration = self._calculate_duration(start_time, end_time)
         
         # Format numbers for better readability
-        # Data Volume - convert MB to appropriate unit (GB if large)
+        # Data Volume - convert MB to appropriate unit (GB if large, KB/bytes if small)
         consumer_mb_raw = parts[2].strip() if len(parts) > 2 else 'N/A'
-        consumer_mb = self._format_mb_size(consumer_mb_raw)
+        if consumer_mb_raw != 'N/A':
+            try:
+                mb_val = float(consumer_mb_raw)
+                if mb_val < 0.001:  # Less than 1 KB
+                    consumer_mb = f"{mb_val * 1024 * 1024:.0f} bytes"
+                elif mb_val < 1:  # Less than 1 MB, show in KB
+                    consumer_mb = f"{mb_val * 1024:.2f} KB"
+                else:
+                    consumer_mb = self._format_mb_size(consumer_mb_raw)
+            except ValueError:
+                consumer_mb = consumer_mb_raw
+        else:
+            consumer_mb = 'N/A'
         
-        # MB/sec throughput
-        consumer_mbps = self._format_number(parts[3].strip() if len(parts) > 3 else 'N/A')
+        # MB/sec throughput - show KB/sec if very small
+        mbps_raw = parts[3].strip() if len(parts) > 3 else 'N/A'
+        if mbps_raw != 'N/A':
+            try:
+                mbps_val = float(mbps_raw)
+                if mbps_val < 0.01:  # Less than 0.01 MB/s, show in KB/s
+                    consumer_mbps = f"{mbps_val * 1024:.2f} KB/s"
+                else:
+                    consumer_mbps = self._format_number(mbps_raw)
+            except ValueError:
+                consumer_mbps = mbps_raw
+        else:
+            consumer_mbps = 'N/A'
         
         # Message count
         consumer_msgs = self._format_number(parts[4].strip() if len(parts) > 4 else 'N/A')
         
-        # TPS (nMsg.sec) - rounded to integer (same as producer)
+        # TPS (nMsg.sec) - show decimals if < 1, otherwise round to integer
         msgps_raw = parts[5].strip() if len(parts) > 5 else 'N/A'
         try:
-            msgps = str(int(float(msgps_raw))) if msgps_raw != 'N/A' else 'N/A'
+            if msgps_raw != 'N/A':
+                msgps_val = float(msgps_raw)
+                if msgps_val < 1:
+                    msgps = f"{msgps_val:.2f}"
+                else:
+                    msgps = str(int(msgps_val))
+            else:
+                msgps = 'N/A'
         except ValueError:
             msgps = 'N/A'
         
@@ -165,12 +195,32 @@ class ResultParser:
         
         # Fetch metrics
         fetch_ms = self._format_number(parts[7].strip() if len(parts) > 7 else 'N/A')
-        fetch_mbps = self._format_number(parts[8].strip() if len(parts) > 8 else 'N/A')
         
-        # Fetch msg/sec - rounded to integer
+        # Fetch MB/sec - show KB/sec if very small
+        fetch_mbps_raw = parts[8].strip() if len(parts) > 8 else 'N/A'
+        if fetch_mbps_raw != 'N/A':
+            try:
+                fetch_mbps_val = float(fetch_mbps_raw)
+                if fetch_mbps_val < 0.01:  # Less than 0.01 MB/s, show in KB/s
+                    fetch_mbps = f"{fetch_mbps_val * 1024:.2f} KB/s"
+                else:
+                    fetch_mbps = self._format_number(fetch_mbps_raw)
+            except ValueError:
+                fetch_mbps = fetch_mbps_raw
+        else:
+            fetch_mbps = 'N/A'
+        
+        # Fetch msg/sec - show decimals if < 1, otherwise round to integer
         fetch_msgps_raw = parts[9].strip() if len(parts) > 9 else 'N/A'
         try:
-            fetch_msgps = str(int(float(fetch_msgps_raw))) if fetch_msgps_raw != 'N/A' else 'N/A'
+            if fetch_msgps_raw != 'N/A':
+                fetch_msgps_val = float(fetch_msgps_raw)
+                if fetch_msgps_val < 1:
+                    fetch_msgps = f"{fetch_msgps_val:.2f}"
+                else:
+                    fetch_msgps = str(int(fetch_msgps_val))
+            else:
+                fetch_msgps = 'N/A'
         except ValueError:
             fetch_msgps = 'N/A'
         
