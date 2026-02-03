@@ -156,6 +156,7 @@ security.protocol=SASL_SSL
 sasl.mechanism=AWS_MSK_IAM
 sasl.jaas.config=software.amazon.msk.auth.iam.IAMLoginModule required;
 sasl.client.callback.handler.class=software.amazon.msk.auth.iam.IAMClientCallbackHandler
+auto.offset.reset=earliest
 """)
         config_file.close()
         # Set readable permissions for Docker container

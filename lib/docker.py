@@ -16,6 +16,7 @@ class DockerRunner:
         bootstrap_servers: str,
         jar_path: Optional[str] = None,
         payload_file: Optional[str] = None,
+        producer_config: Optional[str] = None,
         consumer_config: Optional[str] = None,
         aws_config: Optional[dict] = None
     ) -> subprocess.CompletedProcess:
@@ -26,6 +27,7 @@ class DockerRunner:
             bootstrap_servers: Kafka bootstrap servers
             jar_path: Optional MSK IAM JAR path
             payload_file: Optional payload file path
+            producer_config: Optional producer config file path
             consumer_config: Optional consumer config file path
             aws_config: Optional AWS credentials dict
         """
@@ -54,12 +56,19 @@ class DockerRunner:
             # Update command to use Docker path
             cmd = [docker_payload_path if arg == payload_file else arg for arg in cmd]
         
+        # Mount producer config if provided
+        if producer_config:
+            docker_producer_config_path = '/tmp/producer.properties'
+            docker_cmd.extend(['-v', f'{producer_config}:{docker_producer_config_path}:ro'])
+            # Update command to use Docker path
+            cmd = [docker_producer_config_path if arg == producer_config else arg for arg in cmd]
+        
         # Mount consumer config if provided
         if consumer_config:
-            docker_config_path = '/tmp/consumer-config.properties'
-            docker_cmd.extend(['-v', f'{consumer_config}:{docker_config_path}:ro'])
+            docker_consumer_config_path = '/tmp/consumer-config.properties'
+            docker_cmd.extend(['-v', f'{consumer_config}:{docker_consumer_config_path}:ro'])
             # Update command to use Docker path
-            cmd = [docker_config_path if arg == consumer_config else arg for arg in cmd]
+            cmd = [docker_consumer_config_path if arg == consumer_config else arg for arg in cmd]
         
         docker_cmd.append(self.kafka_image)
         docker_cmd.extend(cmd)

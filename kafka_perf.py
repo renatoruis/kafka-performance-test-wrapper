@@ -206,6 +206,7 @@ Producer: acks={producer_config['acks']}, compression={producer_config['compress
                 bootstrap_servers=bootstrap_servers,
                 jar_path=jar_path,
                 payload_file=temp_payload_file,
+                producer_config=producer_config_file,
                 aws_config=aws_config
             )
             
@@ -261,17 +262,17 @@ Producer: acks={producer_config['acks']}, compression={producer_config['compress
             
             # Add consumer config file
             if consumer_config_file:
-                # Using MSK IAM config
-                consumer_cmd.extend(['--consumer.config', '/tmp/consumer.properties'])
+                # Using MSK IAM config (will be mapped to Docker path)
+                consumer_cmd.extend(['--consumer.config', consumer_config_file])
             elif temp_consumer_config_path:
-                # Using temp config with auto.offset.reset=earliest
+                # Using temp config with auto.offset.reset=earliest (will be mapped to Docker path)
                 consumer_cmd.extend(['--consumer.config', temp_consumer_config_path])
             
             result = self.docker_runner.run_kafka_cmd(
                 consumer_cmd,
                 bootstrap_servers=bootstrap_servers,
                 jar_path=jar_path,
-                consumer_config=temp_consumer_config_path,
+                consumer_config=consumer_config_file or temp_consumer_config_path,
                 aws_config=aws_config
             )
             
