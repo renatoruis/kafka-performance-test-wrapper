@@ -116,15 +116,16 @@ class MSKIAMManager:
             raise RuntimeError(f"Failed to assume role: {e}")
     
     def _download_jar(self) -> Path:
-        """Download MSK IAM auth JAR if needed"""
+        """Download MSK IAM auth JAR with all dependencies"""
         jar_version = self.msk_config.get('jar_version', '2.3.5')
         cache_dir = self.script_dir / '.cache'
         cache_dir.mkdir(exist_ok=True)
-        jar_path = cache_dir / f'aws-msk-iam-auth-{jar_version}.jar'
+        jar_path = cache_dir / f'aws-msk-iam-auth-{jar_version}-all.jar'
         
         if not jar_path.exists():
-            jar_url = f'https://repo1.maven.org/maven2/software/amazon/msk/aws-msk-iam-auth/{jar_version}/aws-msk-iam-auth-{jar_version}.jar'
-            print(f"Downloading MSK IAM auth jar: {jar_url}")
+            # Download the "all" JAR which includes all dependencies (AWS SDK, etc.)
+            jar_url = f'https://repo1.maven.org/maven2/software/amazon/msk/aws-msk-iam-auth/{jar_version}/aws-msk-iam-auth-{jar_version}-all.jar'
+            print(f"Downloading MSK IAM auth jar (with dependencies): {jar_url}")
             subprocess.run(['curl', '-fsSL', jar_url, '-o', str(jar_path)], check=True)
         
         return jar_path
