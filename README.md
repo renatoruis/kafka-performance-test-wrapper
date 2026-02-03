@@ -1,16 +1,18 @@
-# kafka-performance-test-wrapper
+# Kafka Performance Test Wrapper
 
-🚀 CLI wrapper for Apache Kafka performance testing with support for MSK IAM authentication.
+🚀 Modern CLI wrapper for Apache Kafka performance testing with professional HTML reports and MSK IAM authentication.
 
 ## Features
 
-- ✅ Uses official Kafka CLI tools (`kafka-producer-perf-test`, `kafka-consumer-perf-test`)
-- ✅ MSK IAM authentication support (auto assume-role)
-- ✅ YAML configuration
-- ✅ Human-readable and HTML reports
-- ✅ Built-in HTTP server to view reports
-- ✅ Zero external dependencies (only pyyaml)
-- ✅ Works with any Kafka cluster (local, MSK, Confluent Cloud, etc)
+- ✅ **Simple CLI interface** - Run tests with a single command
+- ✅ **Professional HTML reports** - Beautiful reports with Tailwind CSS and metrics cards
+- ✅ **Producer & Consumer tests** - Complete end-to-end performance validation
+- ✅ **MSK IAM authentication** - Built-in support for AWS MSK with IAM
+- ✅ **Docker-based** - No local Kafka CLI installation needed
+- ✅ **JSON payload support** - Test with real-world message formats
+- ✅ **HTTP server** - Built-in web server to view reports
+- ✅ **Modular architecture** - Clean, maintainable codebase
+- ✅ **Zero external dependencies** - Only requires `pyyaml`
 
 ## Quick Start
 
@@ -29,8 +31,8 @@ pip3 install -r requirements.txt
 # MSK with IAM
 ./kafka_perf.py run --config configs/msk-iam.yaml
 
-# Custom config
-./kafka_perf.py run --config my-config.yaml
+# With JSON payload
+./kafka_perf.py run --config configs/json-file.yaml
 ```
 
 ### 3. View Reports
@@ -42,14 +44,34 @@ After running a test, HTML reports are **automatically generated**. View them wi
 ./kafka_perf.py serve
 
 # Or open HTML directly
-open reports/20260202-175030-performance-test/report.html
+open reports/20260203-120000-performance-test/report.html
 ```
+
+## Requirements
+
+- **Docker** - Used to run Kafka CLI tools
+- **Python 3.7+** - For the wrapper script
+- **pyyaml** - For configuration files
+
+### Network Configuration
+
+When connecting to localhost Kafka (e.g., `localhost:9094`), the tool automatically uses `--network=host` for Docker containers. This allows the container to access the host's network stack.
+
+For remote Kafka clusters (MSK, Confluent Cloud, etc), standard Docker networking is used.
 
 ## Commands
 
+### `check` - Verify Environment
+
+Checks Docker installation and Kafka connectivity:
+
+```bash
+./kafka_perf.py check
+```
+
 ### `run` - Execute Performance Test
 
-Runs the complete performance test and automatically generates both text and HTML reports.
+Runs producer and consumer performance tests:
 
 ```bash
 # Default config
@@ -60,466 +82,386 @@ Runs the complete performance test and automatically generates both text and HTM
 ```
 
 **What it does:**
-1. Creates topic (if `create_topic: true`)
-2. Runs producer performance test
-3. Runs consumer performance test (if enabled)
-4. Generates text summary report
-5. **Automatically generates HTML report**
-6. Shows command to view reports in browser
+1. Runs producer test with specified TPS and payload
+2. Runs consumer test to validate message consumption
+3. Generates summary report with metrics
+4. Automatically creates HTML report
+5. Saves all outputs to timestamped directory
 
 **Output:**
 ```
-✅ Test completed successfully!
-
-📁 Reports location: reports/20260202-175030-performance-test
-   • Text summary:   summary.txt
-   • HTML report:    report.html
-   • Producer logs:  producer.out
-   • Consumer logs:  consumer.out
-
-💡 View reports in browser:
-   ./kafka_perf.py serve
+reports/20260203-120000-performance-test/
+├── producer.out       # Raw producer output
+├── consumer.out       # Raw consumer output
+├── summary.txt        # Parsed metrics
+└── report.html        # Beautiful HTML report ⭐
 ```
 
-### `check` - Validate Connection
+### `render` - Generate HTML Report
 
-Validates cluster connectivity and checks if the target topic exists.
+Regenerate HTML report from an existing summary file:
 
 ```bash
-# Check cluster and topic
-./kafka_perf.py check
-
-# Check with custom config
-./kafka_perf.py check --config configs/msk-iam.yaml
+./kafka_perf.py render reports/20260203-120000-test/summary.txt
 ```
 
-**What it does:**
-1. Tests connection to Kafka cluster
-2. Lists available topics
-3. Checks if configured topic exists
-4. Shows topic details if it exists
-5. Suggests how to create topic if it doesn't exist
+### `serve` - Start HTTP Server
 
-**Note:** `check` does not fail if topic doesn't exist - it just warns you.
-
-### `render` - Regenerate Reports
-
-Re-renders reports from existing test results. **Note:** HTML reports are already auto-generated after each `run`.
+Start a local HTTP server to view reports:
 
 ```bash
-# Text report (terminal)
-./kafka_perf.py render reports/20260202-161526-perf-cli/
-
-# Regenerate HTML report
-./kafka_perf.py render reports/20260202-161526-perf-cli/ --html
-
-# Custom output location
-./kafka_perf.py render reports/20260202-161526-perf-cli/ --html --output my-report.html
-```
-
-**Use cases:**
-- Re-format existing reports
-- Generate custom HTML output location
-- View old test results in terminal
-
-### `serve` - HTTP Server for Reports
-
-```bash
-# Default port 8000
 ./kafka_perf.py serve
-
-# Custom port
-./kafka_perf.py serve --port 9000
 ```
+
+Opens browser automatically at `http://localhost:8000` showing all test reports.
 
 ## Configuration
 
-### Default Config (`configs/default.yaml`)
+Configuration is done via YAML files in the `configs/` directory.
+
+### Default Configuration
 
 ```yaml
-# Note: When using localhost/127.0.0.1, Docker automatically uses --network=host
-kafka:
-  bootstrap_servers: "localhost:9094"
-
-use_docker_cli: true
-kafka_image: "confluentinc/cp-kafka:7.6.0"
-
-test:
-  topic: "performance-test"
-  tps: 1000
-  duration_sec: 60
-  payload_bytes: 1024
-  
-producer:
-  acks: "all"
-  compression: "snappy"
-  linger_ms: 10
-  batch_size: 16384
-
-consumer:
-  enabled: true
-  group: "perf-cli-group"
-  from_latest: false
-```
-
-### MSK IAM Config (`configs/msk-iam.yaml`)
-
-```yaml
-kafka:
-  bootstrap_servers: "b-1.xxx.amazonaws.com:9098,b-2.xxx.amazonaws.com:9098"
-
-msk_iam:
-  enabled: true
-  region: "us-east-1"
-  role_arn: "arn:aws:iam::123456789012:role/MyKafkaRole"
-  session_name: "perf-cli"
-
-test:
-  topic: "my-performance-test"
-  tps: 1000
-  duration_sec: 60
-  payload_bytes: 1024
-```
-
-## Configuration Parameters
-
-### Kafka
-
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `bootstrap_servers` | Kafka brokers | `localhost:9094` |
-
-### JSON Payloads
-
-| Parameter | Description | Example |
-|-----------|-------------|---------|
-| `payload_file` | Path to JSON file (auto-minified) | `payloads/event.json` |
-
-**Note:** When using `payload_file`, the `payload_bytes` parameter is ignored. The JSON file will be automatically minified to a single line.
-
-### MSK IAM
-
-| Parameter | Description | Required |
-|-----------|-------------|----------|
-| `enabled` | Enable IAM auth | No |
-| `region` | AWS region | Yes (if IAM) |
-| `role_arn` | IAM role ARN | No* |
-| `session_name` | Session name | No |
-| `profile` | AWS profile | No |
-
-*If `role_arn` not provided, uses existing AWS credentials from environment.
-
-### Test
-
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `topic` | Topic name | `performance-test` |
-| `topic_prefix` | Generate unique topic | `` |
-| `tps` | Target TPS | `1000` |
-| `duration_sec` | Test duration | `60` |
-| `payload_bytes` | Message size | `1024` |
-| `partitions` | Topic partitions | `3` |
-| `replication_factor` | Replication factor | `1` |
-
-### Producer
-
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `acks` | Ack mode | `all` |
-| `compression` | Compression | `snappy` |
-| `linger_ms` | Linger time | `10` |
-| `batch_size` | Batch size | `16384` |
-
-### Consumer
-
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `enabled` | Run consumer test | `true` |
-| `group` | Consumer group | `perf-cli-group` |
-| `from_latest` | Start from latest | `false` |
-
-## Report Output
-
-Each test run **automatically generates**:
-
-```
-reports/20260202-161526-performance-test/
-├── producer.out         # Raw producer output
-├── consumer.out         # Raw consumer output
-├── summary.txt          # Text summary report
-└── report.html          # HTML report (auto-generated) ✨
-```
-
-The HTML report is **always generated** after each test run. No need to run `render` manually!
-
-### Example Report
-
-```
-╔══════════════════════════════════════════════════════════╗
-║       Kafka Performance Report (CLI)                     ║
-╚══════════════════════════════════════════════════════════╝
-
-📊 Test Configuration
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Topic:        performance-test
-Bootstrap:    localhost:9094
-Records:      60000 | TPS: 1000 | Payload: 1024 bytes
-
-🚀 Producer Results (TPS is most important)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-TPS:          999.70 msg/s  ⭐
-Throughput:   0.98 MB/s
-Records Sent: 60000
-Latency Avg:  7.90 ms
-Latency Max:  307.00 ms
-P50/P95/P99:  8 / 14 / 19 ms
-P99.9:        44 ms
-```
-
-## Use Cases
-
-### 1. Local Kafka Testing
-
-```yaml
-# configs/local.yaml
+# configs/default.yaml
 kafka:
   bootstrap_servers: "localhost:9094"
 
 test:
-  topic: "test-local"
-  tps: 1000
-  duration_sec: 30
+  name: "performance-test"
+  topic: "test-perf"
+  num_records: 1000000
+  target_tps: 1000
+  payload_bytes: 1024
+  duration_sec: 60
+  consumer_timeout_ms: 60000
+  
+  producer:
+    acks: "all"
+    compression: "lz4"
+    linger_ms: 10
+    batch_size: 32768
+    client_id: "perf-producer"
+
+report:
+  dir: ""  # Empty = use ./reports
+  http_port: 8000
 ```
 
-```bash
-./kafka_perf.py run --config configs/local.yaml
-```
+### MSK IAM Configuration
 
-### 2. AWS MSK with IAM
+For AWS MSK with IAM authentication:
 
 ```yaml
-# configs/msk-prod.yaml
+# configs/msk-iam.yaml
 kafka:
-  bootstrap_servers: "b-1.xxx.amazonaws.com:9098,b-2.xxx.amazonaws.com:9098"
+  bootstrap_servers: "b-1.msk.us-east-1.amazonaws.com:9098"
 
 msk_iam:
   enabled: true
   region: "us-east-1"
-  role_arn: "arn:aws:iam::123456789012:role/KafkaRole"
+  role_arn: "arn:aws:iam::123456789:role/KafkaClientRole"
+  session_name: "kafka-perf"
+  jar_version: "2.3.5"
 
 test:
-  topic: "production-test"
-  tps: 5000
-  duration_sec: 120
-  payload_bytes: 2048
+  name: "msk-performance-test"
+  topic: "test-perf"
+  # ... rest of test config
 ```
 
-```bash
-./kafka_perf.py run --config configs/msk-prod.yaml
-```
+### JSON Payload Configuration
 
-### 3. High Volume Test
-
-```yaml
-test:
-  tps: 10000
-  duration_sec: 300
-  payload_bytes: 512
-
-producer:
-  acks: "1"
-  compression: "lz4"
-  batch_size: 32768
-```
-
-### 4. Large Payload Test
-
-```yaml
-test:
-  tps: 100
-  payload_bytes: 131072  # 128 KB
-  
-producer:
-  compression: "snappy"
-  batch_size: 262144  # 256 KB
-```
-
-### 5. JSON Payload Test
+To test with custom JSON payloads:
 
 ```yaml
 # configs/json-file.yaml
 test:
-  topic: "json-file-test"
-  tps: 1000
+  name: "json-file-performance-test"
+  topic: "test-json"
+  num_records: 100000
+  target_tps: 1000
+  payload_file: "payloads/sample-event.json"  # Path to JSON file
+  # ... rest of config
+```
+
+**Example payload file:**
+
+```json
+{
+  "event_id": "evt-12345",
+  "timestamp": "2024-01-15T10:30:00Z",
+  "user_id": 67890,
+  "event_type": "page_view",
+  "properties": {
+    "page": "/products/laptop",
+    "referrer": "https://google.com",
+    "device": "desktop"
+  },
+  "metadata": {
+    "ip": "192.168.1.1",
+    "user_agent": "Mozilla/5.0..."
+  }
+}
+```
+
+**Notes:**
+- JSON is automatically minified to a single line (required by `kafka-producer-perf-test`)
+- Payload size is calculated from the minified JSON
+- Reports show the actual payload size used
+
+## HTML Reports
+
+The tool generates professional HTML reports with:
+
+### Executive Summary
+- Target TPS, Payload Size, Duration, Total Records
+
+### Producer Performance
+- **Key Metrics Cards:**
+  - Throughput (TPS) - Messages per second
+  - Data Rate - MB/s throughput
+  - Average Latency - Mean response time
+  - Max Latency - Peak response time
   
-  # Use external JSON file
-  payload_file: "payloads/sample-event.json"
-```
+- **Latency Distribution:**
+  - P50 (Median)
+  - P95
+  - P99
+  - P99.9
 
-```bash
-./kafka_perf.py run --config configs/json-file.yaml
-```
-
-**How it works:**
-- JSON file is automatically minified to a single line
-- Each test message uses the same JSON payload
-- Perfect for realistic load testing
-
-**Benefits of JSON payloads:**
-- ✅ More realistic testing (mimics production data)
-- ✅ Better compression ratios (JSON patterns compress well)
-- ✅ Test with actual message structure
-- ✅ Validate real payload sizes
-
-## Viewing Reports
-
-### Option 1: HTTP Server (Recommended)
-
-```bash
-./kafka_perf.py serve
-```
-
-- Opens browser at http://localhost:8000
-- Lists all report directories
-- Click to view HTML reports
-- Live refresh as new tests complete
-
-### Option 2: Direct Render
-
-```bash
-# Terminal output
-./kafka_perf.py render reports/20260202-161526-perf-cli/
-
-# Generate/regenerate HTML
-./kafka_perf.py render reports/20260202-161526-perf-cli/ --html
-```
-
-### Option 3: Open HTML Directly
-
-```bash
-open reports/20260202-161526-perf-cli/report.html
-```
-
-## Performance Tuning
-
-### Increase TPS
-
-```yaml
-test:
-  tps: 10000
-
-producer:
-  acks: "1"
-  compression: "lz4"
-  linger_ms: 5
-  batch_size: 32768
-```
-
-### Reduce Latency
-
-```yaml
-producer:
-  acks: "1"
-  compression: "none"
-  linger_ms: 0
-  batch_size: 1024
-```
-
-### Large Payloads
-
-```yaml
-test:
-  payload_bytes: 131072  # 128 KB
+### Consumer Performance
+- **Key Metrics Cards:**
+  - Throughput (TPS) - Messages consumed per second
+  - Data Rate - MB/s consumption rate
+  - Messages - Total messages consumed
+  - Data Volume - Total MB consumed
   
-producer:
-  compression: "snappy"
-  batch_size: 262144
-  linger_ms: 20
-```
+- **Time Window** - Start and end timestamps
 
-## Troubleshooting
-
-### Connection Refused
-
-```bash
-# Check if Kafka is running
-docker ps | grep kafka
-
-# Test connection
-./kafka_perf.py check
-```
-
-### MSK IAM Issues
-
-```bash
-# Verify AWS credentials
-aws sts get-caller-identity
-
-# Check role
-aws iam get-role --role-name MyKafkaRole
-
-# Test assume-role
-aws sts assume-role --role-arn arn:aws:iam::123456789012:role/MyKafkaRole --role-session-name test
-```
-
-### Permission Denied (JAR download)
-
-```bash
-# Manually download
-mkdir -p .cache
-curl -fsSL https://repo1.maven.org/maven2/software/amazon/msk/aws-msk-iam-auth/2.3.5/aws-msk-iam-auth-2.3.5.jar \
-  -o .cache/aws-msk-iam-auth-2.3.5.jar
-```
-
-## Requirements
-
-- Python 3.8+
-- Docker (for running Kafka CLI tools)
-- AWS CLI (for MSK IAM with role assumption)
-
-### Docker Network Mode
-
-When testing with **local Kafka** (localhost/127.0.0.1), the tool automatically uses `--network=host` to allow Docker containers to access the host network. This means:
-
-- ✅ No need to manually configure Docker networking
-- ✅ Works seamlessly with `localhost:9094` or `127.0.0.1:9094`
-- ✅ Kafka running on host machine is directly accessible
-
-For **remote clusters** (MSK, Confluent Cloud, etc), standard Docker networking is used.
-
-## Installation
-
-```bash
-git clone git@github.com:renatoruis/kafka-performance-test-wrapper.git
-cd kafka-performance-test-wrapper
-pip3 install -r requirements.txt
-```
+### Test Configuration
+- Topic name
+- Bootstrap servers
+- Producer settings
 
 ## Project Structure
 
 ```
-kafka-performance-test-wrapper/
-├── kafka_perf.py              # Main CLI
-├── requirements.txt           # Python dependencies (pyyaml)
-├── configs/
-│   ├── default.yaml          # Local Kafka config
-│   └── msk-iam.yaml          # MSK IAM config
-├── .gitignore
-├── LICENSE                    # MIT License
-├── CHANGELOG.md
-├── CONTRIBUTING.md
-└── README.md                  # This file
+performance/
+├── kafka_perf.py           # Main CLI script (416 lines)
+├── lib/                    # Modular library
+│   ├── __init__.py        # Library exports
+│   ├── config.py          # Configuration loader
+│   ├── docker.py          # Docker command executor
+│   ├── payload.py         # JSON payload manager
+│   ├── parser.py          # Result parser
+│   ├── reporter.py        # Text reporter
+│   ├── html_generator.py  # HTML report generator
+│   ├── server.py          # HTTP server
+│   ├── msk_iam.py         # AWS MSK IAM authenticator
+│   └── utils.py           # Utility functions
+├── configs/               # Configuration files
+│   ├── default.yaml       # Default config
+│   ├── msk-iam.yaml       # MSK IAM example
+│   └── json-file.yaml     # JSON payload example
+├── payloads/              # JSON payload files
+│   └── sample-event.json  # Example payload
+├── reports/               # Generated reports (gitignored)
+├── requirements.txt       # Python dependencies
+├── LICENSE                # MIT License
+├── CHANGELOG.md           # Version history
+└── README.md              # This file
 ```
 
-## Repository
+## Understanding the Metrics
 
-- **GitHub**: https://github.com/renatoruis/kafka-performance-test-wrapper
-- **License**: MIT
+### Producer Metrics
 
-## Contributing
+**TPS (Transactions Per Second)**
+- Most important metric for producer performance
+- Shows actual throughput vs target
+- Higher is better (up to cluster limits)
 
-Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+**Latency (ms)**
+- Time from sending to acknowledgment
+- `avg_ms`: Mean latency across all messages
+- `max_ms`: Worst-case latency
+- `p50/p95/p99/p99.9`: Percentile latencies
 
-## Author
+**Throughput (MB/sec)**
+- Data rate in megabytes per second
+- Depends on message size and TPS
 
-Renato Ruis
+### Consumer Metrics
+
+**TPS (Messages/sec)**
+- Consumer throughput
+- Should match or exceed producer TPS for real-time processing
+
+**Data Rate (MB/sec)**
+- Consumer data consumption rate
+
+**Time Window**
+- Actual time taken to consume messages
+- Used to calculate TPS
+
+## Troubleshooting
+
+### Docker Connection Issues
+
+**Error:** `Cannot connect to Docker daemon`
+
+**Solution:**
+```bash
+# Start Docker Desktop (macOS/Windows)
+# Or start Docker service (Linux)
+sudo systemctl start docker
+```
+
+### Kafka Connection Issues
+
+**Error:** `Cannot connect to Kafka`
+
+**Solution:**
+1. Verify Kafka is running:
+   ```bash
+   docker ps | grep kafka
+   ```
+
+2. Check bootstrap servers in config:
+   ```yaml
+   kafka:
+     bootstrap_servers: "localhost:9094"  # Correct port?
+   ```
+
+3. For localhost, ensure port is accessible
+
+### MSK IAM Issues
+
+**Error:** `MSK IAM requires AWS credentials`
+
+**Solution:**
+```bash
+# Set AWS credentials
+export AWS_ACCESS_KEY_ID=xxx
+export AWS_SECRET_ACCESS_KEY=yyy
+
+# Or configure AWS CLI
+aws configure
+```
+
+### Permission Issues
+
+**Error:** `Permission denied: ./kafka_perf.py`
+
+**Solution:**
+```bash
+chmod +x kafka_perf.py
+```
+
+## Performance Tips
+
+### Producer Optimization
+
+1. **Batch Size** - Increase for higher throughput:
+   ```yaml
+   producer:
+     batch_size: 65536  # Default: 32768
+   ```
+
+2. **Linger Time** - Allow more time for batching:
+   ```yaml
+   producer:
+     linger_ms: 20  # Default: 10
+   ```
+
+3. **Compression** - Enable for better network utilization:
+   ```yaml
+   producer:
+     compression: "lz4"  # or snappy, gzip, zstd
+   ```
+
+4. **Acknowledgments** - Trade durability for speed:
+   ```yaml
+   producer:
+     acks: "1"  # Instead of "all" for higher throughput
+   ```
+
+### Test Design
+
+1. **Warm-up** - Run a small test first to warm up the cluster
+2. **Duration** - Longer tests (60s+) give more stable results
+3. **Payload Size** - Test with realistic message sizes
+4. **TPS Targets** - Start conservative, increase gradually
+
+## Examples
+
+### Basic Local Test
+
+```bash
+# 1. Start local Kafka
+docker-compose up -d
+
+# 2. Run test
+./kafka_perf.py run
+
+# 3. View results
+./kafka_perf.py serve
+```
+
+### High Throughput Test
+
+```yaml
+# configs/high-throughput.yaml
+test:
+  num_records: 10000000
+  target_tps: 100000
+  payload_bytes: 512
+  
+  producer:
+    acks: "1"
+    compression: "lz4"
+    linger_ms: 20
+    batch_size: 131072
+```
+
+```bash
+./kafka_perf.py run --config configs/high-throughput.yaml
+```
+
+### JSON Payload Test
+
+```bash
+# Create custom payload
+cat > payloads/my-event.json <<EOF
+{
+  "timestamp": "2024-01-15T10:00:00Z",
+  "event": "user_action",
+  "data": { "action": "click", "target": "button" }
+}
+EOF
+
+# Update config to use it
+./kafka_perf.py run --config configs/json-file.yaml
+```
+
+### MSK Production Test
+
+```bash
+# Assume AWS role
+aws sts assume-role --role-arn arn:aws:iam::xxx:role/KafkaClient
+
+# Run test
+./kafka_perf.py run --config configs/msk-iam.yaml
+```
+
+## License
+
+MIT License - see [LICENSE](LICENSE) file.
+
+## Support
+
+For issues, questions, or contributions, please use the project's issue tracker.
+
+---
+
+**Made with ❤️ for Kafka performance testing**

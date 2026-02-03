@@ -2,33 +2,27 @@
 kafka:
   bootstrap_servers: "localhost:9094"
 
-use_docker_cli: true
-kafka_image: "confluentinc/cp-kafka:7.6.0"
+docker:
+  kafka_image: "confluentinc/cp-kafka:7.6.0"
 
 test:
-  topic: "json-file-performance-test"
-  create_topic: true
-  delete_topic: true
-  partitions: 13
-  replication_factor: 1
-  
-  tps: 3000
+  name: "json-file-performance-test"
+  topic: "test-json"
+  num_records: 100000
+  target_tps: 2000
   duration_sec: 120
-  payload_bytes: 1024  # Ignored when using payload_file
+  consumer_timeout_ms: 60000
   
-  # Use external JSON file as payload
-  payload_file: "payloads/json-128kb.json"
+  # JSON payload file
+  payload_file: "payloads/sample-event.json"
+  
+  producer:
+    acks: "all"
+    compression: "snappy"
+    linger_ms: 10
+    batch_size: 16384
+    client_id: "json-file-producer"
 
-producer:
-  acks: "all"
-  compression: "snappy"
-  linger_ms: 10
-  batch_size: 16384
-  client_id: "json-file-producer"
-
-consumer:
-  enabled: true
-  group: "json-file-group"
-  from_latest: false
-
-report_dir: ""
+report:
+  dir: ""
+  http_port: 8000
