@@ -245,6 +245,8 @@ Producer: acks={producer_config['acks']}, compression={producer_config['compress
                 temp_consumer_config_path = f'/tmp/consumer-perf-{timestamp}.properties'
                 with open(temp_consumer_config_path, 'w') as f:
                     f.write('auto.offset.reset=earliest\n')
+                # Set readable permissions for Docker container
+                os.chmod(temp_consumer_config_path, 0o644)
             
             # Build consumer command
             # NOTE: Not using --show-detailed-stats to get final aggregate metrics

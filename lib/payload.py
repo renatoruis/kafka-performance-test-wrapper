@@ -1,6 +1,7 @@
 """Payload file management"""
 
 import json
+import os
 import tempfile
 from pathlib import Path
 from typing import Optional, Tuple
@@ -44,6 +45,9 @@ class PayloadManager:
             temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.json')
             temp_file.write(minified_json)
             temp_file.close()
+            
+            # Set readable permissions for Docker container
+            os.chmod(temp_file.name, 0o644)
             
             return temp_file.name, payload_size
             

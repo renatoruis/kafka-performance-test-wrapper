@@ -144,6 +144,8 @@ sasl.jaas.config=software.amazon.msk.auth.iam.IAMLoginModule required;
 sasl.client.callback.handler.class=software.amazon.msk.auth.iam.IAMClientCallbackHandler
 """)
         config_file.close()
+        # Set readable permissions for Docker container
+        os.chmod(config_file.name, 0o644)
         return config_file.name
     
     def _create_consumer_config(self, bootstrap_servers: str) -> str:
@@ -156,6 +158,8 @@ sasl.jaas.config=software.amazon.msk.auth.iam.IAMLoginModule required;
 sasl.client.callback.handler.class=software.amazon.msk.auth.iam.IAMClientCallbackHandler
 """)
         config_file.close()
+        # Set readable permissions for Docker container
+        os.chmod(config_file.name, 0o644)
         return config_file.name
     
     def get_aws_config(self) -> dict:
