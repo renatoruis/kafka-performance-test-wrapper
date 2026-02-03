@@ -9,9 +9,17 @@ docker:
 msk_iam:
   enabled: true
   region: "us-east-1"
+  
+  # Option 1: Use assume-role (cross-account or specific role)
   role_arn: "arn:aws:iam::XXX:role/XXX"
   session_name: "msk-perf-test"
-  profile: ""
+  
+  # Option 2: Use EC2 instance role (leave role_arn empty/commented)
+  # When running on EC2 with instance role, boto3 auto-detects credentials
+  # role_arn: ""
+  
+  # Option 3: Use AWS CLI profile
+  # profile: "my-profile"
 
 test:
   name: "msk-performance-test"

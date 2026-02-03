@@ -1,1 +1,5 @@
 pyyaml>=6.0
+
+# Optional: For MSK IAM authentication with instance role support
+# Uncomment if using AWS MSK with IAM
+# boto3>=1.26.0

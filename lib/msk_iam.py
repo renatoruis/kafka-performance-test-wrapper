@@ -6,6 +6,12 @@ import tempfile
 from pathlib import Path
 from typing import Optional, Tuple
 
+try:
+    import boto3
+    BOTO3_AVAILABLE = True
+except ImportError:
+    BOTO3_AVAILABLE = False
+
 
 class MSKIAMManager:
     """Manage MSK IAM authentication"""
@@ -31,13 +37,17 @@ class MSKIAMManager:
         if not aws_region:
             raise ValueError("MSK IAM requires aws_region")
         
-        # Assume role if ARN provided
+        # Get AWS credentials
         if role_arn:
+            # Assume role if ARN provided
             self._assume_role(role_arn)
+        elif not os.environ.get('AWS_ACCESS_KEY_ID'):
+            # Try to get credentials from instance role or AWS config
+            self._get_session_credentials()
         
-        # Check credentials
+        # Verify credentials are available
         if not os.environ.get('AWS_ACCESS_KEY_ID') or not os.environ.get('AWS_SECRET_ACCESS_KEY'):
-            raise ValueError("MSK IAM requires AWS credentials")
+            raise ValueError("MSK IAM requires AWS credentials (instance role, profile, or environment variables)")
         
         # Download JAR
         jar_path = self._download_jar()
@@ -47,6 +57,41 @@ class MSKIAMManager:
         consumer_config_file = self._create_consumer_config(bootstrap_servers)
         
         return str(jar_path), producer_config_file, consumer_config_file
+    
+    def _get_session_credentials(self):
+        """Get AWS credentials from instance role, profile, or environment"""
+        if not BOTO3_AVAILABLE:
+            print("⚠️  boto3 not available. Install with: pip install boto3")
+            print("⚠️  Will try to use existing environment variables")
+            return
+        
+        try:
+            # Create session (automatically detects instance role, profile, env vars)
+            session = boto3.Session(
+                region_name=self.msk_config.get('region'),
+                profile_name=self.msk_config.get('profile') or None
+            )
+            credentials = session.get_credentials()
+            
+            if credentials:
+                print("✅ Using AWS credentials from:", end=" ")
+                if os.environ.get('AWS_PROFILE') or self.msk_config.get('profile'):
+                    print(f"profile ({self.msk_config.get('profile') or os.environ.get('AWS_PROFILE')})")
+                elif os.path.exists('/sys/hypervisor/uuid'):
+                    # Likely EC2 instance
+                    print("EC2 instance role")
+                else:
+                    print("AWS configuration")
+                
+                os.environ['AWS_ACCESS_KEY_ID'] = credentials.access_key
+                os.environ['AWS_SECRET_ACCESS_KEY'] = credentials.secret_key
+                if credentials.token:
+                    os.environ['AWS_SESSION_TOKEN'] = credentials.token
+            else:
+                print("⚠️  No AWS credentials found")
+                
+        except Exception as e:
+            print(f"⚠️  Failed to get AWS credentials via boto3: {e}")
     
     def _assume_role(self, role_arn: str):
         """Assume AWS role"""
